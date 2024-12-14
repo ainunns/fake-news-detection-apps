@@ -85,6 +85,23 @@ def health_check():
 class FakeNewsRequest(BaseModel):
     title: str
     content: str
+    
+    @model_validator(mode='before')
+    def check_empty_values(cls, values):
+        errors = []
+        title = values.get('title')
+        content = values.get('content')
+
+        if not title:
+            errors.append("Title cannot be empty")
+        if not content:
+            errors.append("Content cannot be empty")
+
+        if errors:
+            raise RequestValidationError(
+                errors=errors
+            )
+        return values
 
     @model_validator(mode='after')
     def check_title_and_content(cls, values):
