@@ -8,23 +8,23 @@ import Providers from "@/app/providers";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: {
-    default: "Nextjs Starter Template",
-    template: "%s | Nextjs Starter Template",
-  },
-  description: "Nextjs 14.2.1 + Tailwind CSS starter template",
+    title: {
+        default: "RSBP - Fake News Detection",
+        template: "%s | RSBP - Fake News Detection",
+    },
+    description: "Fake News Detection for RSBP Final Project",
 };
 
 export default function RootLayout({
-  children,
+    children,
 }: {
-  children: React.ReactNode;
+    children: React.ReactNode;
 }) {
-  return (
-    <html lang="en">
-      <body className={inter.className}>
-        <Providers>{children}</Providers>
-      </body>
-    </html>
-  );
+    return (
+        <html lang="en">
+            <body className={inter.className}>
+                <Providers>{children}</Providers>
+            </body>
+        </html>
+    );
 }
