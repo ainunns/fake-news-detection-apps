@@ -2,13 +2,13 @@ import torch
 import torch.nn as nn
 from sklearn.feature_extraction.text import TfidfVectorizer
 import pandas as pd
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from http import HTTPStatus
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, model_validator
 
 df1 =  pd.read_csv("../dataset/train.csv", sep=';')
 df2 =  pd.read_csv("../dataset/test.csv", sep=';')
@@ -66,6 +66,10 @@ app.add_middleware(
 async def validation_exception_handler(request, exc: RequestValidationError):
     return response_builder(HTTPStatus.BAD_REQUEST, "Validation error", None, True, exc.errors())
 
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request, exc: HTTPException):
+    return response_builder(exc.status_code, exc.detail, None, True, None)
+
 @app.exception_handler(StarletteHTTPException)
 async def exception_handler(request, exc: StarletteHTTPException):
     return response_builder(exc.status_code, exc.detail, None, True, None)
@@ -82,16 +86,25 @@ class FakeNewsRequest(BaseModel):
     title: str
     content: str
 
-def count_words(text):
-    return len(text.split())
+    @model_validator(mode='after')
+    def check_title_and_content(cls, values):
+        errors = []
+        title = values.title
+        content = values.content
+
+        if title and len(title.split()) < 5:
+            errors.append("Title must contain at least 5 words")
+        if content and len(content.split()) < 50:
+            errors.append("Content must contain at least 50 words")
+
+        if errors:
+            raise RequestValidationError(
+                errors=errors
+            )
+        return values
 
 @app.post("/api/detect")
 def detect_fake_news(request: FakeNewsRequest):
-    if(count_words(request.title) < 5):
-        return response_builder(HTTPStatus.BAD_REQUEST, "Bad Request", None, True, "Title must contain at least 5 words")
-    if(count_words(request.content) < 50):
-        return response_builder(HTTPStatus.BAD_REQUEST, "Bad Request", None, True, "Content must contain at least 50 words")
-    
     sample_combined = request.title + ' ' + request.content
     sample_vector = vectorizer.transform([sample_combined]).toarray()
     sample_tensor = torch.tensor(sample_vector, dtype=torch.float32).to(device)
