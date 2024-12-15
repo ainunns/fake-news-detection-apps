@@ -41,7 +41,7 @@ export const Chat = ({ ...props }: ChatProps) => {
     const methods = useForm<ChatSchema>({
         mode: "onTouched",
     });
-    const { handleSubmit, setValue } = methods;
+    const { handleSubmit, setValue, reset } = methods;
 
     //#endregion //*======== Form ===========
 
@@ -52,8 +52,7 @@ export const Chat = ({ ...props }: ChatProps) => {
 
     const parentRef = useAutoAnimate({});
 
-    const { mutateAsync, data, isPending, isSuccess, error } =
-        useNewsDetectMutation();
+    const { mutateAsync } = useNewsDetectMutation();
 
     const handleAsk = async ({ title, content }: ChatSchema) => {
         setIsLoading(true); // Start loading when submit
@@ -69,8 +68,7 @@ export const Chat = ({ ...props }: ChatProps) => {
         ]);
 
         // Reset form after submitting
-        setValue("title", "");
-        setValue("content", "");
+        reset();
 
         // Trigger the mutation for further processing
         await mutateAsync({ title, content })
@@ -83,7 +81,7 @@ export const Chat = ({ ...props }: ChatProps) => {
                     ...prevMessages,
                     {
                         emitter: "servermodel",
-                        message: `${response.data.message}, this the result:\n\n${predictData.true_percentage}% True,\n ${predictData.false_percentage}% False`,
+                        message: `${response.data.message}, this the result:\n\n${predictData.true_percentage.toFixed(3)}% True,\n ${predictData.false_percentage.toFixed(3)}% False`,
                     },
                 ]);
 
