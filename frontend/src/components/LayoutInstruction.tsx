@@ -93,11 +93,7 @@ export const Instructions = ({ onClick }: IInstructionsProps) => {
             <Stack direction={["column", "column", "row"]}>
                 {introdution.map(({ icon, list, name }, key) => {
                     const handleClick = ({ title, content }: prompt) => {
-                        if (
-                            name == "Examples" ||
-                            name == "Capabilities" ||
-                            name == "Limitations"
-                        ) {
+                        if (name == "Examples") {
                             return () => onClick({ title, content });
                         }
                         return undefined;

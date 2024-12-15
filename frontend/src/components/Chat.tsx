@@ -34,60 +34,64 @@ export interface ChatSchema {
 export const Chat = ({ ...props }: ChatProps) => {
     const [messages, setMessages] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [mounted, setMounted] = useState(false); // Track if component is mounted
+    const [mounted, setMounted] = useState(false);
 
     //#region  //*=========== Form ===========
-
     const methods = useForm<ChatSchema>({
         mode: "onTouched",
     });
     const { handleSubmit, setValue, reset } = methods;
-
     //#endregion //*======== Form ===========
 
     const overflowRef = useRef<HTMLDivElement>(null);
-    const updateScroll = () => {
-        overflowRef.current?.scrollTo(0, overflowRef.current.scrollHeight);
-    };
-
     const parentRef = useAutoAnimate({});
 
     const { mutateAsync } = useNewsDetectMutation();
 
-    const handleAsk = async ({ title, content }: ChatSchema) => {
-        setIsLoading(true); // Start loading when submit
-        updateScroll();
+    const updateScroll = () => {
+        overflowRef.current?.scrollTo({
+            top: overflowRef.current.scrollHeight,
+            behavior: "smooth",
+        });
+    };
 
-        // Immediately update messages with user input and add " OI"
+    // Automatically scroll to the bottom whenever `messages` changes
+    useEffect(() => {
+        updateScroll();
+    }, [messages]);
+
+    const handleAsk = async ({ title, content }: ChatSchema) => {
+        setIsLoading(true);
+
         setMessages((prevMessages) => [
             ...prevMessages,
             {
                 emitter: "user",
-                message: `Title: ${title}\n\nContent: \n${content}`, // Add OI here
+                message: `Title: ${title}\n\nContent: \n${content}`,
             },
         ]);
 
-        // Reset form after submitting
         reset();
 
-        // Trigger the mutation for further processing
         await mutateAsync({ title, content })
             .then((response) => {
-                console.log("Mutation triggered", response);
-
                 const predictData = response.data.data;
 
                 setMessages((prevMessages) => [
                     ...prevMessages,
                     {
                         emitter: "servermodel",
-                        message: `${response.data.message}, this the result:\n\n${predictData.true_percentage.toFixed(3)}% True,\n ${predictData.false_percentage.toFixed(3)}% False`,
+                        message: `${
+                            response.data.message
+                        }, this the result:\n\n${predictData.true_percentage.toFixed(
+                            3
+                        )}% True,\n ${predictData.false_percentage.toFixed(
+                            3
+                        )}% False`,
                     },
                 ]);
 
                 setIsLoading(false);
-                updateScroll();
-                return response;
             })
             .catch((error) => {
                 setMessages((prevMessages) => [
@@ -99,21 +103,11 @@ export const Chat = ({ ...props }: ChatProps) => {
                         }`,
                     },
                 ]);
-                return error;
             });
 
-        // Wait until isLoading is false
-        while (isLoading) {
-            await new Promise((resolve) => setTimeout(resolve, 100));
-        }
-
         setIsLoading(false);
-        updateScroll();
     };
 
-    console.log("Messages", messages);
-
-    // Set mounted to true once component is mounted on client
     useEffect(() => {
         setMounted(true);
     }, []);
@@ -157,17 +151,16 @@ export const Chat = ({ ...props }: ChatProps) => {
 
                             const getMessage = () => {
                                 if (message && typeof message === "string") {
-                                    if (message.slice(0, 2) === "\n\n") {
-                                        return message.slice(2);
-                                    }
-                                    return message;
+                                    return message.startsWith("\n\n")
+                                        ? message.slice(2)
+                                        : message;
                                 }
                                 return "";
                             };
 
                             if (isLoading) {
                                 return (
-                                    <section className="mt-20">
+                                    <section className="mt-20" key={key}>
                                         <HStack gap="5">
                                             <SkeletonCircle size="12" />
                                             <Stack flex="1">
@@ -189,7 +182,7 @@ export const Chat = ({ ...props }: ChatProps) => {
                                     padding={4}
                                     rounded={8}
                                     backgroundColor={
-                                        emitter == "servermodel"
+                                        emitter === "servermodel"
                                             ? "transparent"
                                             : "blackAlpha.300"
                                     }
@@ -233,55 +226,40 @@ export const Chat = ({ ...props }: ChatProps) => {
                 alignItems="center"
                 overflow="hidden"
             >
-                <Stack
-                    maxWidth="768px"
-                    className=" w-full overflow-scroll px-5"
-                >
+                <Stack maxWidth="768px" className="w-full overflow-scroll px-5">
                     <FormProvider {...methods}>
                         <form onSubmit={handleSubmit(handleAsk)}>
                             <Input
                                 label="News Title"
-                                autoFocus={true}
+                                autoFocus
                                 variant="filled"
                                 {...methods.register("title")}
                             />
                             <Textarea
                                 label="News Content"
-                                autoFocus={true}
+                                autoFocus
                                 variant="filled"
-                                inputRightAddon={
-                                    <IconButton
-                                        aria-label="send_button"
-                                        icon={
-                                            !isLoading ? (
-                                                <FiSend />
-                                            ) : (
-                                                <Spinner />
-                                            )
-                                        }
-                                        backgroundColor="transparent"
-                                        onClick={handleSubmit(handleAsk)}
-                                    />
-                                }
                                 {...methods.register("content")}
                                 onKeyDown={(e) => {
                                     if (e.key === "Enter" && !e.shiftKey) {
-                                        e.preventDefault(); // Prevent the default behavior of new line creation
+                                        e.preventDefault();
                                         if (!isLoading) {
                                             handleSubmit(handleAsk)();
                                         }
                                     }
                                 }}
                             />
-                            <Text
-                                textAlign="center"
-                                fontSize="sm"
-                                opacity={0.5}
-                            >
-                                Final Project - Rekayasa Sistem Berbasis
-                                Pengetahuan
-                            </Text>
+                            <IconButton
+                                aria-label="send_button"
+                                icon={!isLoading ? <FiSend /> : <Spinner />}
+                                backgroundColor="whiteAlpha.400"
+                                onClick={handleSubmit(handleAsk)}
+                                className="w-full"
+                            />
                         </form>
+                        <Text textAlign="center" fontSize="sm" opacity={0.5}>
+                            Final Project - Rekayasa Sistem Berbasis Pengetahuan
+                        </Text>
                     </FormProvider>
                 </Stack>
             </Stack>
