@@ -1,0 +1,52 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: fake-news-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # Optional: mount dataset and model for development
+      - ./dataset:/app/dataset
+      - ./notebook/fake_news_classifier.pth:/app/notebook/fake_news_classifier.pth
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/api')",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_RUN_MODE: ${NEXT_PUBLIC_RUN_MODE}
+        NEXT_PUBLIC_API_URL_DEV: ${NEXT_PUBLIC_API_URL_DEV}
+        NEXT_PUBLIC_API_URL_PROD: ${NEXT_PUBLIC_API_URL_PROD}
+        SITE_URL: ${SITE_URL}
+    container_name: fake-news-frontend
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./frontend/.env
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  default:
+    name: fake-news-network
