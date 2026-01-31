@@ -16,7 +16,7 @@ This fake news detection app uses a machine learning model to predict whether a 
 
 For detailed API documentation, please visit the following link:
 
-[API Documentation](https://api.fake-news-detection.ainunns.me/docs)
+[API Documentation](https://api.fake-news-detection.ainunsyamsiyah.com/docs)
 
 ## Reference
 
